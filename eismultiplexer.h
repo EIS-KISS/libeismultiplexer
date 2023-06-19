@@ -23,7 +23,7 @@
 #include <stdbool.h>
 
 /**
-Api for use by libscipaper eismulitplexer.
+Api to controll EISmulitplexer devices.
 * @defgroup API User API
 * This api allows you to controll the EISmulitplexer device.
 * @{

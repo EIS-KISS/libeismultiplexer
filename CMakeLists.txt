@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.0)
 project(eismultiplexer)
 
 find_package(PkgConfig REQUIRED)
+find_package(Doxygen)
 pkg_check_modules(LIBUSB REQUIRED libusb-1.0)
 
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
@@ -26,6 +27,21 @@ install(TARGETS ${PROJECT_NAME}_test DESTINATION bin)
 
 configure_file(pkgconfig/eismuliplexer.pc.in pkgconfig/eismuliplexer.pc @ONLY)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/pkgconfig/eismuliplexer.pc DESTINATION lib/pkgconfig)
+
+if (DOXYGEN_FOUND)
+	set(DOXYGEN_IN ${CMAKE_CURRENT_SOURCE_DIR}/doc/libeismulitplexer.doxygen.in)
+	set(DOXYGEN_OUT ${CMAKE_CURRENT_BINARY_DIR}/doc/libeismulitplexer.doxygen)
+	configure_file(${DOXYGEN_IN} ${DOXYGEN_OUT} @ONLY)
+	message("Doxygen build started")
+
+	add_custom_target(doc
+		COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_OUT}
+		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+		COMMENT "Generating API documentation with Doxygen"
+		VERBATIM )
+else (DOXYGEN_FOUND)
+  message("Doxygen needs to be installed to generate the doxygen documentation")
+endif (DOXYGEN_FOUND)
 
 if(CMAKE_SYSTEM_NAME MATCHES "^Linux")
 	set(UDEV_RULES_INSTALL_DIR /lib/udev/rules.d CACHE PATH "install directory for linux udev config")
