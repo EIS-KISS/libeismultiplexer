@@ -36,12 +36,13 @@ struct usbshm {
 	int vendorID;
 	int productID;
 	char* productName;
-	void (*dataCallback)(uint8_t request, unsigned char* data, size_t length);
+	void* user_data;
+	void (*dataCallback)(uint8_t request, unsigned char* data, size_t length, void* user_data);
 };
 
 void usbshm_distroy(struct usbshm* instance);
 
-int usbshm_init(struct usbshm* instance, void (*dataCallback)(uint8_t request, unsigned char* data, size_t length));
+int usbshm_init(struct usbshm* instance, void (*dataCallback)(uint8_t request, unsigned char* data, size_t length, void* user_data), void* user_data);
 
 bool usbshm_ready(struct usbshm* instance);
 

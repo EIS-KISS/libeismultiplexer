@@ -1,0 +1,113 @@
+/**
+* Copyright (C) 2023 Carl Klemm
+*
+* This program is free software; you can redistribute it and/or
+* modify it under the terms of the GNU General Public License
+* version 3 as published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program; if not, write to the
+* Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+* Boston, MA  02110-1301, USA.
+*/
+
+#pragma once
+
+#include <stdint.h>
+#include <semaphore.h>
+#include <stdbool.h>
+
+/**
+Api for use by libscipaper eismulitplexer.
+* @defgroup API User API
+* This api allows you to controll the EISmulitplexer device.
+* @{
+*/
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+typedef enum {
+	CHANNEL_A = (1 << 1),
+	CHANNEL_B = (1 << 2),
+	CHANNEL_C = (1 << 3),
+	CHANNEL_D = (1 << 4),
+	CHANNEL_E = (1 << 5),
+	CHANNEL_F = (1 << 6),
+	CHANNEL_G = (1 << 7),
+	CHANNEL_NONE = 0,
+} channel_t;
+
+struct eismulitplexer {
+	struct usbshm* priv;
+	sem_t readSem;
+	channel_t activeChannels;
+};
+
+/**
+ * @brief Attempts to connect to a EISmulitplexer device and initalizes a eismulitplexer struct
+ * @param muliplexer pointer to a eismulitplexer struct to initalize
+ * @param serial The serial number of the device to connect to, or 0 for any
+ * @return 0 on sucess and < 0 on failure
+ */
+int eismulitplexer_connect(struct eismulitplexer* muliplexer, int serial);
+
+/**
+ * @brief Conects the given channel(s) to the common inputs
+ * @param muliplexer pointer to a eismulitplexer struct
+ * @param channel A channel to connect, multiple channels can be specified by or'ing together the chanel flags e.g. (CHANNEL_A | CHANNEL_B)
+ * @return 0 on sucess and < 0 on failure
+ */
+int eismulitplexer_connect_channel(struct eismulitplexer* muliplexer, channel_t channel);
+
+/**
+ * @brief Conects the given channel(s) to the common inputs disconnecting all others
+ * @param muliplexer pointer to a eismulitplexer struct
+ * @param channel A channel to connect, multiple channels can be specified by or'ing together the chanel flags e.g. (CHANNEL_A | CHANNEL_B)
+ * @return 0 on sucess and < 0 on failure
+ */
+int eismulitplexer_connect_channel_exclusive(struct eismulitplexer* muliplexer, channel_t channel);
+
+/**
+ * @brief Disconnect the given channel(s) to the common inputs disconnecting all others
+ * @param muliplexer pointer to a eismulitplexer struct
+ * @param channel A channel to connect, multiple channels can be specified by or'ing together the chanel flags e.g. (CHANNEL_A | CHANNEL_B)
+ * All channels can be dissconnected by passing CHANNEL_NONE
+ * @return 0 on sucess and < 0 on failure
+ */
+int eismulitplexer_disconnect_channel(struct eismulitplexer* muliplexer, channel_t channel);
+
+/**
+ * @brief Returns the channels currently connected
+ * @param muliplexer pointer to a eismulitplexer struct
+ * @return channels connected as a bitfield
+ */
+channel_t eismulitplexer_get_connected(struct eismulitplexer* muliplexer);
+
+/**
+ * @brief Turns the led on the pcb on or off
+ * @param muliplexer pointer to a eismulitplexer struct
+ * @param on true to turn the led on, false to turn it off
+ * @return 0 on sucess and < 0 on failure
+ */
+int eismulitplexer_set_led(struct eismulitplexer* muliplexer, bool on);
+
+/**
+ * @brief Disconnects from the eismulitplexer
+ */
+void eismulitplexer_disconnect(struct eismulitplexer* muliplexer);
+
+#ifdef __cplusplus
+}
+#endif
+
+/**
+....
+* @}
+*/

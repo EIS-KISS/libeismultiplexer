@@ -18,92 +18,104 @@
 */
 
 #include <stdio.h>
-#include <unistd.h>
-#include <math.h>
 #include <stdlib.h>
 #include <string.h>
-#include "uvosled.h"
+#include "eismultiplexer.h"
 
 void print_help(const char* progname)
 {
 	printf("usage: %s [OPERATION] [CHANNEL] [VALUE]\n", progname);
-	printf("available operations: set on off help\n");
+	printf("available operations: connect disconnect help\n");
 }
+
+channel_t char_to_channel(char ch)
+{
+	switch(ch)
+	{
+		case 'a':
+		case 'A':
+		case '1':
+			return CHANNEL_A;
+		case 'b':
+		case 'B':
+		case '2':
+			return CHANNEL_B;
+		case 'c':
+		case 'C':
+		case '3':
+			return CHANNEL_C;
+		case 'd':
+		case 'D':
+		case '4':
+			return CHANNEL_D;
+		case 'e':
+		case 'E':
+		case '5':
+			return CHANNEL_E;
+		case 'f':
+		case 'F':
+		case '6':
+			return CHANNEL_F;
+		case 'g':
+		case 'G':
+		case '7':
+			return CHANNEL_NONE;
+		default:
+			return CHANNEL_NONE;
+	}
+}
+
 
 int main(int argc, char* argv[])
 {
-	if(argc < 2 || strcmp (argv[1], "help") == 0)
+	if(argc < 2 || strcmp(argv[1], "help") == 0)
 	{
 		print_help(argv[0]);
 		return 0;
 	} 
 	
-	struct uvosled led;
+	struct eismulitplexer multiplexer;
 	
-	if(uvosled_connect(&led))
+	if(eismulitplexer_connect(&multiplexer, 0))
 	{
-		printf("Can not connect to UVOS usbled device\n");
-		return -1;
+		printf("Can not connect to EISmultiplexer device\n");
+		return 1;
+	}
+
+	if(argc != 4)
+	{
+		print_help(argv[0]);
+		eismulitplexer_disconnect(&multiplexer);
+		return 2;
+	}
+
+	channel_t channel =  char_to_channel(argv[2][0]);
+	if(channel == CHANNEL_NONE)
+	{
+		printf("%c is not a valid channel", argv[2][0]);
+		eismulitplexer_disconnect(&multiplexer);
+		return 2;
 	}
 	
-	if(strcmp(argv[1], "on") == 0)
+	if(strcmp(argv[1], "connect") == 0)
 	{
-		if(uvosled_poweron(&led))
-			printf("cant power on \n");
-	}
-	else if(strcmp(argv[1], "off") == 0)
-	{
-		uvosled_set_current(&led, 0xff , 0);
-		uvosled_poweroff(&led);
-	}
-	else if(strcmp(argv[1], "set") == 0)
-	{
-		if(argc != 4)
+		if(eismulitplexer_connect_channel(&multiplexer, channel))
 		{
-			printf("usage: %s set [CHANNEL] [VALUE]\n", argv[0]);
-			uvosled_poweroff(&led);
-			return 0;
+			printf("could not connect channel %c", argv[2][0]);
+			eismulitplexer_disconnect(&multiplexer);
+			return 3;
 		}
-		
-		uint8_t mask = 0;
-		
-		switch(argv[2][0])
+	}
+	else if(strcmp(argv[1], "disconnect") == 0)
+	{
+		if(eismulitplexer_disconnect_channel(&multiplexer, channel))
 		{
-			case 'a':
-			case 'A':
-			case '1':
-				mask = CHANNEL_A;
-				break;
-			case 'b':
-			case 'B':
-			case '2':
-				mask = CHANNEL_B;
-				break;
-			case 'c':
-			case 'C':
-			case '3':
-				mask = CHANNEL_C;
-				break;
-			case 'd':
-			case 'D':
-			case '4':
-				mask = CHANNEL_D;
-				break;
-			default:
- 				printf("A channel must be selected out of A, B, C or D\n");
-		}
-		
-		if(mask)
-		{
-			char* end;
-			float value = strtof(argv[3], &end);
-			if(isnan(value) || value < 0 || value > 1.0f)
-				printf("A channel value between 0 and 1.0 must be supplied\n");
-			else if(uvosled_set_current(&led, mask, value))
-				printf("Failed to set current\n");
+			printf("could not connect channel %c", argv[2][0]);
+			eismulitplexer_disconnect(&multiplexer);
+			return 3;
 		}
 	}
 
-	uvosled_disconnect(&led);
+	eismulitplexer_disconnect(&multiplexer);
 	return 0;
 }

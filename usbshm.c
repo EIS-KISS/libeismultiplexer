@@ -75,7 +75,7 @@ bool usbshm_isOpen(struct usbshm* instance)
 	return instance->priv->handle != NULL;
 }
 
-int usbshm_init(struct usbshm* instance, void (*dataCallback)(uint8_t request, unsigned char* data, size_t length))
+int usbshm_init(struct usbshm* instance, void (*dataCallback)(uint8_t request, unsigned char* data, size_t length, void* user_data), void* user_data)
 {
 	int ret=0;
 	instance->priv = malloc(sizeof(*instance->priv));
@@ -86,6 +86,7 @@ int usbshm_init(struct usbshm* instance, void (*dataCallback)(uint8_t request, u
 	instance->productID = 0;
 	instance->productName = NULL;
 	instance->dataCallback = dataCallback;
+	instance->user_data = user_data;
 	if(objectCounter == 0)
 	{
 		printf("Usb Init\n"); 
@@ -249,7 +250,7 @@ static void usbshm_transferCallBack(struct libusb_transfer *transfer)
 	else if(transfer->type == LIBUSB_TRANSFER_TYPE_CONTROL) 
 	{
 		if(context->dataCallback && transfer->length-8 >= transfer->actual_length) 
-			context->dataCallback(transfer->buffer[1], transfer->buffer+8, transfer->actual_length);
+			context->dataCallback(transfer->buffer[1], transfer->buffer+8, transfer->actual_length, context->user_data);
 	}
 	free(context->priv->buffer);
 	libusb_free_transfer(context->priv->transfer);

@@ -1,0 +1,7 @@
+includedir=@CMAKE_INSTALL_PREFIX@/include
+
+Name: libeismuliplexer
+Description: C lib to control EISmultiplexer devices
+Version: 1.0
+Libs: -L${libdir} -leismultiplexer
+Cflags: -I${includedir}
