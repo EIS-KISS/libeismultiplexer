@@ -40,5 +40,5 @@ int main(int argc, char* argv[])
 @endcode
 //-----------------------------------------------------------
 
-librelaxisloader is licenced to you under the Apache License, Version 2.0
+libeismultiplexer is licensed to you under the Apache License, Version 2.0
 */
