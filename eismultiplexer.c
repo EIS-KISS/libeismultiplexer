@@ -32,7 +32,7 @@ static void usleep(uint64_t microseconds)
 
 static void dataCallback(uint8_t request, unsigned char* data, size_t length, void* user_data)
 {
-	struct eismulitplexer* muliplexer = user_data;
+	struct eismultiplexer* muliplexer = user_data;
 
 	if(length >= 1)
 		muliplexer->activeChannels = data[0];
@@ -40,7 +40,7 @@ static void dataCallback(uint8_t request, unsigned char* data, size_t length, vo
 	sem_post(&muliplexer->readSem);
 }
 
-int eismulitplexer_connect(struct eismulitplexer* muliplexer, int serial)
+int eismultiplexer_connect(struct eismultiplexer* muliplexer, int serial)
 {
 	int ret;
 	muliplexer->priv = malloc(sizeof(*muliplexer->priv));
@@ -61,7 +61,7 @@ int eismulitplexer_connect(struct eismulitplexer* muliplexer, int serial)
 	return 0;
 }
 
-int eismulitplexer_connect_channel_exclusive(struct eismulitplexer* muliplexer, channel_t channel)
+int eismultiplexer_connect_channel_exclusive(struct eismultiplexer* muliplexer, channel_t channel)
 {
 	uint16_t wValue;
 	// we compile with fno-strict-aliasing
@@ -74,21 +74,21 @@ int eismulitplexer_connect_channel_exclusive(struct eismulitplexer* muliplexer, 
 	return ret;
 }
 
-int eismulitplexer_connect_channel(struct eismulitplexer* muliplexer, channel_t channel)
+int eismultiplexer_connect_channel(struct eismultiplexer* muliplexer, channel_t channel)
 {
-	channel_t channels = eismulitplexer_get_connected(muliplexer);
+	channel_t channels = eismultiplexer_get_connected(muliplexer);
 	channels |= channel;
-	return eismulitplexer_connect_channel_exclusive(muliplexer, channels);
+	return eismultiplexer_connect_channel_exclusive(muliplexer, channels);
 }
 
-int eismulitplexer_disconnect_channel(struct eismulitplexer* muliplexer, channel_t channel)
+int eismultiplexer_disconnect_channel(struct eismultiplexer* muliplexer, channel_t channel)
 {
-	channel_t channels = eismulitplexer_get_connected(muliplexer);
+	channel_t channels = eismultiplexer_get_connected(muliplexer);
 	channels &= ~channel;
-	return eismulitplexer_connect_channel_exclusive(muliplexer, channels);
+	return eismultiplexer_connect_channel_exclusive(muliplexer, channels);
 }
 
-channel_t eismulitplexer_get_connected(struct eismulitplexer* muliplexer)
+channel_t eismultiplexer_get_connected(struct eismultiplexer* muliplexer)
 {
 	usbshm_readControlTransfer(muliplexer->priv, 3, 1);
 	sem_wait(&muliplexer->readSem);
@@ -96,7 +96,7 @@ channel_t eismulitplexer_get_connected(struct eismulitplexer* muliplexer)
 }
 
 
-int eismulitplexer_set_led(struct eismulitplexer* muliplexer, bool on)
+int eismultiplexer_set_led(struct eismultiplexer* muliplexer, bool on)
 {
 	int ret;
 	while((ret = usbshm_writeControlTransfer(muliplexer->priv, on, NULL, 0, 0, 0)) == USBSHM_ERROR_AGAIN)
@@ -104,7 +104,7 @@ int eismulitplexer_set_led(struct eismulitplexer* muliplexer, bool on)
 	return ret;
 }
 
-void eismulitplexer_disconnect(struct eismulitplexer* muliplexer)
+void eismultiplexer_disconnect(struct eismultiplexer* muliplexer)
 {
 	usbshm_distroy(muliplexer->priv);
 	free(muliplexer->priv);

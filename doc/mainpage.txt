@@ -1,8 +1,8 @@
-/*! \mainpage librelaxisloader manual
+/*! \mainpage libeismultiplexer manual
 
-libeismulitplexer is a shared library that allows you to controll EISmulitplexer devices
+libeismultiplexer is a shared library that allows you to control EISmultiplexer devices
 
-An API referance can be found here: \subpage API
+An API reference can be found here: \subpage API
 
 ## Example usage:
 
@@ -14,11 +14,11 @@ _______
 
 int main(int argc, char* argv[])
 {
-	// Eatch connection to a device is required to have a corrisponding eismulitplexer struct
-	struct eismulitplexer multiplexer;
+	// Each connection to a device is required to have a corresponding eismultiplexer struct
+	struct eismultiplexer multiplexer;
 
 	// Connect to the first device found
-	int ret = eismulitplexer_connect(&multiplexer, 0);
+	int ret = eismultiplexer_connect(&multiplexer, 0);
 	if(ret != 0)
 	{
 		printf("Can not connect to EISmultiplexer device\n");
@@ -26,7 +26,7 @@ int main(int argc, char* argv[])
 	}
 
 	// Connect channels A and C to the common output
-	ret = eismulitplexer_connect_channel(&multiplexer, CHANNEL_A | CHANNEL_C);
+	ret = eismultiplexer_connect_channel(&multiplexer, CHANNEL_A | CHANNEL_C);
 	if(ret != 0)
 	{
 		printf("Failure to communicate with the device\n");
@@ -34,7 +34,7 @@ int main(int argc, char* argv[])
 	}
 
 	// Disconnect from device
-	eismulitplexer_disconnect(&multiplexer);
+	eismultiplexer_disconnect(&multiplexer);
 	return 0;
 }
 @endcode

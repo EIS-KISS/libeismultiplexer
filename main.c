@@ -74,9 +74,9 @@ int main(int argc, char* argv[])
 		return 0;
 	} 
 	
-	struct eismulitplexer multiplexer;
+	struct eismultiplexer multiplexer;
 	
-	if(eismulitplexer_connect(&multiplexer, 0))
+	if(eismultiplexer_connect(&multiplexer, 0))
 	{
 		printf("Can not connect to EISmultiplexer device\n");
 		return 1;
@@ -85,7 +85,7 @@ int main(int argc, char* argv[])
 	if(argc != 4)
 	{
 		print_help(argv[0]);
-		eismulitplexer_disconnect(&multiplexer);
+		eismultiplexer_disconnect(&multiplexer);
 		return 2;
 	}
 
@@ -93,29 +93,29 @@ int main(int argc, char* argv[])
 	if(channel == CHANNEL_NONE)
 	{
 		printf("%c is not a valid channel", argv[2][0]);
-		eismulitplexer_disconnect(&multiplexer);
+		eismultiplexer_disconnect(&multiplexer);
 		return 2;
 	}
 	
 	if(strcmp(argv[1], "connect") == 0)
 	{
-		if(eismulitplexer_connect_channel(&multiplexer, channel))
+		if(eismultiplexer_connect_channel(&multiplexer, channel))
 		{
 			printf("could not connect channel %c", argv[2][0]);
-			eismulitplexer_disconnect(&multiplexer);
+			eismultiplexer_disconnect(&multiplexer);
 			return 3;
 		}
 	}
 	else if(strcmp(argv[1], "disconnect") == 0)
 	{
-		if(eismulitplexer_disconnect_channel(&multiplexer, channel))
+		if(eismultiplexer_disconnect_channel(&multiplexer, channel))
 		{
 			printf("could not connect channel %c", argv[2][0]);
-			eismulitplexer_disconnect(&multiplexer);
+			eismultiplexer_disconnect(&multiplexer);
 			return 3;
 		}
 	}
 
-	eismulitplexer_disconnect(&multiplexer);
+	eismultiplexer_disconnect(&multiplexer);
 	return 0;
 }
