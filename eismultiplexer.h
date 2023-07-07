@@ -43,20 +43,18 @@ extern "C" {
 #endif
 
 typedef enum {
-	CHANNEL_A = (1 << 1),
-	CHANNEL_B = (1 << 2),
-	CHANNEL_C = (1 << 3),
-	CHANNEL_D = (1 << 4),
-	CHANNEL_E = (1 << 5),
-	CHANNEL_F = (1 << 6),
-	CHANNEL_G = (1 << 7),
+	CHANNEL_A = (1 << 0),
+	CHANNEL_B = (1 << 1),
+	CHANNEL_C = (1 << 2),
+	CHANNEL_D = (1 << 3),
+	CHANNEL_E = (1 << 4),
+	CHANNEL_F = (1 << 5),
+	CHANNEL_G = (1 << 6),
 	CHANNEL_NONE = 0,
 } channel_t;
 
 struct eismultiplexer {
 	struct usbshm* priv;
-	sem_t readSem;
-	channel_t activeChannels;
 };
 
 /**
@@ -111,6 +109,9 @@ int eismultiplexer_set_led(struct eismultiplexer* muliplexer, bool on);
  * @brief Disconnects from the eismultiplexer
  */
 void eismultiplexer_disconnect(struct eismultiplexer* muliplexer);
+
+int eismultiplexer_write_eeprom(struct eismultiplexer* muliplexer, uint16_t addr, uint16_t value);
+uint16_t eismultiplexer_read_eeprom(struct eismultiplexer* muliplexer, uint16_t addr);
 
 #ifdef __cplusplus
 }

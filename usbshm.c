@@ -27,6 +27,7 @@
 
 #include "usbshm.h"
 
+#include <stdint.h>
 #include <stdio.h>
 #include <stdatomic.h>
 #include <stdbool.h>
@@ -98,7 +99,6 @@ int usbshm_init(struct usbshm* instance, void (*dataCallback)(uint8_t request, u
 	instance->user_data = user_data;
 	if(objectCounter == 0)
 	{
-		printf("Usb Init\n"); 
 		ret = libusb_init(NULL) < 0 ? USBSHM_ERROR_ERR : 0;
 		libusbDataMutex = malloc(sizeof(*libusbDataMutex));
 		pthread_mutex_init(libusbDataMutex, NULL);
@@ -118,7 +118,6 @@ int usbshm_open(struct usbshm* instance, int vendorID, int productID, const char
 {
 	instance->priv->handle = NULL;
 	pthread_mutex_lock(libusbDataMutex);
-	printf("Listing Devices\n");
 	libusb_device** list;
 	int count = libusb_get_device_list(NULL, &list);
 	int errorCode = 0;
@@ -141,7 +140,7 @@ int usbshm_open(struct usbshm* instance, int vendorID, int productID, const char
 		pthread_mutex_unlock(libusbDataMutex);
 		return USBSHM_ERROR_ERR;
 	}
-	
+
 	if(usbshm_isOpen(instance))
 	{
 		instance->vendorID = vendorID;
@@ -162,8 +161,7 @@ int usbshm_open(struct usbshm* instance, int vendorID, int productID, const char
 		printf("Opening usb device failed\n");
 		errorCode = USBSHM_ERROR_ERR;
 	}
-	
-	
+
 	libusb_free_device_list(list, count);
 	pthread_mutex_unlock(libusbDataMutex);
 	return errorCode;
@@ -221,7 +219,7 @@ int usbshm_writeControlTransfer(struct usbshm* instance, const uint8_t request,
 	else return USBSHM_ERROR_AGAIN;
 }
 
-int usbshm_readControlTransfer(struct usbshm* instance, const uint8_t request, const uint8_t length)
+int usbshm_readControlTransfer(struct usbshm* instance, const uint8_t request, const uint16_t length)
 {
 	if(!usbshm_isOpen(instance))
 		return USBSHM_ERROR_NOT_CONNECTED;
@@ -231,7 +229,8 @@ int usbshm_readControlTransfer(struct usbshm* instance, const uint8_t request, c
 	{
 		pthread_mutex_lock(libusbDataMutex);
 		instance->priv->buffer = malloc(length+8);
-		libusb_fill_control_setup(instance->priv->buffer, LIBUSB_REQUEST_TYPE_VENDOR | LIBUSB_RECIPIENT_DEVICE | LIBUSB_ENDPOINT_IN, request, request,request,length);
+		libusb_fill_control_setup(instance->priv->buffer, LIBUSB_REQUEST_TYPE_VENDOR | LIBUSB_RECIPIENT_DEVICE | LIBUSB_ENDPOINT_IN,
+			request, request, request, length);
 		instance->priv->transfer = libusb_alloc_transfer(0);
 		libusb_fill_control_transfer(instance->priv->transfer, instance->priv->handle, instance->priv->buffer, &usbshm_transferCallBack, instance, 100);
 		int ret = libusb_submit_transfer(instance->priv->transfer);
@@ -264,4 +263,10 @@ static void usbshm_transferCallBack(struct libusb_transfer *transfer)
 	free(context->priv->buffer);
 	libusb_free_transfer(context->priv->transfer);
 	context->priv->transfer = NULL;
+}
+
+int usbshm_readControlTransferSync(struct usbshm* instance, const uint8_t request, uint8_t* buffer, const uint16_t length)
+{
+	return libusb_control_transfer(instance->priv->handle, LIBUSB_REQUEST_TYPE_VENDOR | LIBUSB_RECIPIENT_DEVICE | LIBUSB_ENDPOINT_IN,
+		request, request, request, buffer, length, 2000);
 }

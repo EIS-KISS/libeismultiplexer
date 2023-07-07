@@ -28,6 +28,7 @@
 #include <libusb-1.0/libusb.h>
 #include <pthread.h>
 #include <stdatomic.h>
+#include <stdint.h>
 #include <time.h>
 #include <stdbool.h>
 
@@ -67,5 +68,7 @@ int usbshm_writeControlTransfer(struct usbshm* instance, const uint8_t request,
 								char* buffer, const uint8_t length, 
 								const uint16_t wValue, const uint16_t wIndex);
 
-int usbshm_readControlTransfer(struct usbshm* instance, const uint8_t request, const uint8_t length);
+int usbshm_readControlTransfer(struct usbshm* instance, const uint8_t request, const uint16_t length);
+
+int usbshm_readControlTransferSync(struct usbshm* instance, const uint8_t request, uint8_t* buffer, const uint16_t length);
 

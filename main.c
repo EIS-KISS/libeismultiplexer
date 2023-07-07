@@ -25,6 +25,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -33,7 +34,7 @@
 void print_help(const char* progname)
 {
 	printf("usage: %s [OPERATION] [CHANNEL] [VALUE]\n", progname);
-	printf("available operations: connect disconnect help\n");
+	printf("available operations: connect disconnect clear connect_all get help\n");
 }
 
 channel_t char_to_channel(char ch)
@@ -67,10 +68,17 @@ channel_t char_to_channel(char ch)
 		case 'g':
 		case 'G':
 		case '7':
-			return CHANNEL_NONE;
+			return CHANNEL_G;
 		default:
 			return CHANNEL_NONE;
 	}
+}
+
+
+void disconnect(struct eismultiplexer* multiplexer)
+{
+	eismultiplexer_set_led(multiplexer, false);
+	eismultiplexer_disconnect(multiplexer);
 }
 
 
@@ -90,40 +98,72 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 
-	if(argc != 4)
-	{
-		print_help(argv[0]);
-		eismultiplexer_disconnect(&multiplexer);
-		return 2;
-	}
+	eismultiplexer_set_led(&multiplexer, true);
 
-	channel_t channel =  char_to_channel(argv[2][0]);
-	if(channel == CHANNEL_NONE)
+	if(strcmp(argv[1], "clear") == 0)
 	{
-		printf("%c is not a valid channel", argv[2][0]);
-		eismultiplexer_disconnect(&multiplexer);
-		return 2;
+		eismultiplexer_disconnect_channel(&multiplexer, CHANNEL_NONE);
 	}
-	
-	if(strcmp(argv[1], "connect") == 0)
+	else if(strcmp(argv[1], "write") == 0)
 	{
-		if(eismultiplexer_connect_channel(&multiplexer, channel))
+		eismultiplexer_write_eeprom(&multiplexer, 0, 42);
+	}
+	else if(strcmp(argv[1], "read") == 0)
+	{
+		uint16_t value = eismultiplexer_read_eeprom(&multiplexer, 0);
+		printf("0: %u\n", value);
+	}
+	else if(strcmp(argv[1], "connect_all") == 0)
+	{
+		eismultiplexer_connect_channel(&multiplexer, 0xff);
+	}
+	else if(strcmp(argv[1], "get") == 0)
+	{
+		channel_t channels = eismultiplexer_get_connected(&multiplexer);
+		printf("%d\n", channels);
+		for(size_t i = 0; i < 7; ++i)
 		{
-			printf("could not connect channel %c", argv[2][0]);
-			eismultiplexer_disconnect(&multiplexer);
-			return 3;
+			bool connected = channels & (1 << i);
+			printf("Channel %c: %s\n", (char)('A'+i), connected ? "on" : "off");
 		}
 	}
-	else if(strcmp(argv[1], "disconnect") == 0)
+	else
 	{
-		if(eismultiplexer_disconnect_channel(&multiplexer, channel))
+		if(argc != 3)
 		{
-			printf("could not connect channel %c", argv[2][0]);
-			eismultiplexer_disconnect(&multiplexer);
-			return 3;
+			printf("Usage %s %s [CHANNEL]\n", argv[0], argv[1]);
+			disconnect(&multiplexer);
+			return 2;
+		}
+
+		channel_t channel =  char_to_channel(argv[2][0]);
+		if(channel == CHANNEL_NONE)
+		{
+			printf("%c is not a valid channel\n", argv[2][0]);
+			disconnect(&multiplexer);
+			return 2;
+		}
+
+		if(strcmp(argv[1], "connect") == 0)
+		{
+			if(eismultiplexer_connect_channel(&multiplexer, channel))
+			{
+				printf("could not connect channel %c\n", argv[2][0]);
+				disconnect(&multiplexer);
+				return 3;
+			}
+		}
+		else if(strcmp(argv[1], "disconnect") == 0)
+		{
+			if(eismultiplexer_disconnect_channel(&multiplexer, channel))
+			{
+				printf("could not disconnect channel %c\n", argv[2][0]);
+				disconnect(&multiplexer);
+				return 3;
+			}
 		}
 	}
 
-	eismultiplexer_disconnect(&multiplexer);
+	disconnect(&multiplexer);
 	return 0;
 }
