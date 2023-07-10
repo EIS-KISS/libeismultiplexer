@@ -42,7 +42,7 @@ static void usleep(uint64_t microseconds)
 	nanosleep(&ts, NULL);
 }
 
-int eismultiplexer_connect(struct eismultiplexer* muliplexer, int serial)
+int eismultiplexer_connect(struct eismultiplexer* muliplexer, uint16_t serial)
 {
 	int ret;
 	muliplexer->priv = malloc(sizeof(*muliplexer->priv));
@@ -52,8 +52,11 @@ int eismultiplexer_connect(struct eismultiplexer* muliplexer, int serial)
 	ret = usbshm_init(muliplexer->priv, NULL, muliplexer);
 	if(ret)
 		return -2;
-	
-	ret = usbshm_open(muliplexer->priv, 0xfe17, 0x07dc , NULL);
+
+	unsigned char serialStr[5];
+	snprintf((char*)serialStr, sizeof(serialStr), "%04hu", serial);
+
+	ret = usbshm_open(muliplexer->priv, 0xfe17, 0x07dc , serial == 0 ? NULL : serialStr);
 	if(ret)
 		return -3;
 	return 0;
@@ -93,7 +96,7 @@ int eismultiplexer_disconnect_channel(struct eismultiplexer* muliplexer, channel
 channel_t eismultiplexer_get_connected(struct eismultiplexer* muliplexer)
 {
 	uint8_t buffer[2] = {};
-	usbshm_readControlTransferSync(muliplexer->priv, 3, buffer, 1);
+	usbshm_readControlTransferSync(muliplexer->priv, 3, 0, 0, buffer, 1);
 	return buffer[0];
 }
 
@@ -108,7 +111,7 @@ int eismultiplexer_set_led(struct eismultiplexer* muliplexer, bool on)
 int eismultiplexer_write_eeprom(struct eismultiplexer* muliplexer, uint16_t addr, uint16_t value)
 {
 	int ret;
-	while((ret = usbshm_writeControlTransfer(muliplexer->priv, 4, NULL, 0, value, addr)) == USBSHM_ERROR_AGAIN)
+	while((ret = usbshm_writeControlTransfer(muliplexer->priv, 5, NULL, 0, value, addr)) == USBSHM_ERROR_AGAIN)
 		usleep(1000000);
 	return ret;
 }
@@ -116,7 +119,7 @@ int eismultiplexer_write_eeprom(struct eismultiplexer* muliplexer, uint16_t addr
 uint16_t eismultiplexer_read_eeprom(struct eismultiplexer* muliplexer, uint16_t addr)
 {
 	uint8_t buffer[2] = {};
-	usbshm_readControlTransferSync(muliplexer->priv, 5, buffer, 2);
+	usbshm_readControlTransferSync(muliplexer->priv, 4, 0, addr, buffer, 2);
 	return *((uint16_t*)buffer);
 }
 

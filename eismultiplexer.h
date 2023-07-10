@@ -63,7 +63,7 @@ struct eismultiplexer {
  * @param serial The serial number of the device to connect to, or 0 for any
  * @return 0 on sucess and < 0 on failure
  */
-int eismultiplexer_connect(struct eismultiplexer* muliplexer, int serial);
+int eismultiplexer_connect(struct eismultiplexer* muliplexer, uint16_t serial);
 
 /**
  * @brief Conects the given channel(s) to the common inputs

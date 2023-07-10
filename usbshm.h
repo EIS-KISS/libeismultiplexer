@@ -45,7 +45,6 @@ struct usbshm {
 	struct usbshm_priv* priv;
 	int vendorID;
 	int productID;
-	char* productName;
 	void* user_data;
 	void (*dataCallback)(uint8_t request, unsigned char* data, size_t length, void* user_data);
 };
@@ -56,7 +55,7 @@ int usbshm_init(struct usbshm* instance, void (*dataCallback)(uint8_t request, u
 
 bool usbshm_ready(struct usbshm* instance);
 
-int usbshm_open(struct usbshm* instance, int vendorID, int productID, const char* productName);
+int usbshm_open(struct usbshm* instance, int vendorID, int productID, const unsigned char* serial);
 
 bool usbshm_isOpen(struct usbshm* instance);
 
@@ -68,7 +67,7 @@ int usbshm_writeControlTransfer(struct usbshm* instance, const uint8_t request,
 								char* buffer, const uint8_t length, 
 								const uint16_t wValue, const uint16_t wIndex);
 
-int usbshm_readControlTransfer(struct usbshm* instance, const uint8_t request, const uint16_t length);
+int usbshm_readControlTransfer(struct usbshm* instance, const uint8_t request, const uint16_t wValue, const uint16_t wIndex, const uint16_t length);
 
-int usbshm_readControlTransferSync(struct usbshm* instance, const uint8_t request, uint8_t* buffer, const uint16_t length);
+int usbshm_readControlTransferSync(struct usbshm* instance, const uint8_t request, const uint16_t wValue, const uint16_t wIndex, uint8_t* buffer, const uint16_t length);
 

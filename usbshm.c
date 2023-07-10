@@ -59,7 +59,6 @@ void usbshm_distroy(struct usbshm* instance)
 	free(instance->priv->transfer);
 	libusb_close(instance->priv->handle);
 	free(instance->priv->buffer);
-	free(instance->productName);
 	free(instance->priv);
 	if(--objectCounter == 0)
 	{
@@ -94,7 +93,6 @@ int usbshm_init(struct usbshm* instance, void (*dataCallback)(uint8_t request, u
 	instance->priv->buffer = NULL;
 	instance->vendorID = 0;
 	instance->productID = 0;
-	instance->productName = NULL;
 	instance->dataCallback = dataCallback;
 	instance->user_data = user_data;
 	if(objectCounter == 0)
@@ -114,7 +112,7 @@ bool usbshm_ready(struct usbshm* instance)
 	return instance->priv->transfer == NULL;
 }
 
-int usbshm_open(struct usbshm* instance, int vendorID, int productID, const char* productName)
+int usbshm_open(struct usbshm* instance, int vendorID, int productID, const unsigned char* serial)
 {
 	instance->priv->handle = NULL;
 	pthread_mutex_lock(libusbDataMutex);
@@ -130,6 +128,21 @@ int usbshm_open(struct usbshm* instance, int vendorID, int productID, const char
 			if(desc.idVendor == vendorID && desc.idProduct == productID)
 			{
 				errorCode = libusb_open(list[i], &instance->priv->handle) < 0 ? USBSHM_ERROR_ERR : 0;
+				if(serial)
+				{
+					size_t len = strlen((const char*)serial)+1;
+					unsigned char* buffer = malloc(len);
+					buffer[0] = '\0';
+					libusb_get_string_descriptor_ascii(instance->priv->handle, desc.iSerialNumber, buffer, len);
+					int cmp = strcmp((const char*)serial, (const char*)buffer);
+					free(buffer);
+					if(cmp != 0)
+					{
+						libusb_close(instance->priv->handle);
+						instance->priv->handle = NULL;
+						continue;
+					}
+				}
 				break;
 			}
 		}
@@ -145,15 +158,6 @@ int usbshm_open(struct usbshm* instance, int vendorID, int productID, const char
 	{
 		instance->vendorID = vendorID;
 		instance->productID = productID;
-		if(productName)
-		{
-			instance->productName = malloc(strlen(productName)+1);
-			strcpy(instance->productName, productName);
-		}
-		else
-		{
-			instance->productName = NULL;
-		}
 		libusb_set_auto_detach_kernel_driver(instance->priv->handle, true);
 	}
 	else
@@ -181,7 +185,7 @@ void usbshm_reset(struct usbshm* instance)
 void usbshm_reopen(struct usbshm* instance)
 {
 	libusb_close(instance->priv->handle);
-	usbshm_open(instance, instance->vendorID, instance->productID, instance->productName);
+	usbshm_open(instance, instance->vendorID, instance->productID, NULL);
 }
 
 int usbshm_writeControlTransfer(struct usbshm* instance, const uint8_t request,
@@ -219,7 +223,7 @@ int usbshm_writeControlTransfer(struct usbshm* instance, const uint8_t request,
 	else return USBSHM_ERROR_AGAIN;
 }
 
-int usbshm_readControlTransfer(struct usbshm* instance, const uint8_t request, const uint16_t length)
+int usbshm_readControlTransfer(struct usbshm* instance, const uint8_t request, const uint16_t wValue, const uint16_t wIndex, const uint16_t length)
 {
 	if(!usbshm_isOpen(instance))
 		return USBSHM_ERROR_NOT_CONNECTED;
@@ -230,7 +234,7 @@ int usbshm_readControlTransfer(struct usbshm* instance, const uint8_t request, c
 		pthread_mutex_lock(libusbDataMutex);
 		instance->priv->buffer = malloc(length+8);
 		libusb_fill_control_setup(instance->priv->buffer, LIBUSB_REQUEST_TYPE_VENDOR | LIBUSB_RECIPIENT_DEVICE | LIBUSB_ENDPOINT_IN,
-			request, request, request, length);
+			request, wValue, wIndex, length);
 		instance->priv->transfer = libusb_alloc_transfer(0);
 		libusb_fill_control_transfer(instance->priv->transfer, instance->priv->handle, instance->priv->buffer, &usbshm_transferCallBack, instance, 100);
 		int ret = libusb_submit_transfer(instance->priv->transfer);
@@ -265,8 +269,8 @@ static void usbshm_transferCallBack(struct libusb_transfer *transfer)
 	context->priv->transfer = NULL;
 }
 
-int usbshm_readControlTransferSync(struct usbshm* instance, const uint8_t request, uint8_t* buffer, const uint16_t length)
+int usbshm_readControlTransferSync(struct usbshm* instance, const uint8_t request, const uint16_t wValue, const uint16_t wIndex, uint8_t* buffer, const uint16_t length)
 {
 	return libusb_control_transfer(instance->priv->handle, LIBUSB_REQUEST_TYPE_VENDOR | LIBUSB_RECIPIENT_DEVICE | LIBUSB_ENDPOINT_IN,
-		request, request, request, buffer, length, 2000);
+		request, wValue, wIndex, buffer, length, 2000);
 }
