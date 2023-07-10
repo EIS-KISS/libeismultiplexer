@@ -67,7 +67,6 @@ void usbshm_distroy(struct usbshm* instance)
 		libusb_exit(NULL);
 		pthread_mutex_destroy(libusbDataMutex);
 	}
-
 }
 
 static void* usbshm_libusbPoll(void* arg)
@@ -100,7 +99,6 @@ int usbshm_init(struct usbshm* instance, void (*dataCallback)(uint8_t request, u
 		ret = libusb_init(NULL) < 0 ? USBSHM_ERROR_ERR : 0;
 		libusbDataMutex = malloc(sizeof(*libusbDataMutex));
 		pthread_mutex_init(libusbDataMutex, NULL);
-		//libusb_set_option(NULL, LIBUSB_OPTION_LOG_LEVEL, LIBUSB_LOG_LEVEL_DEBUG);
 		pthread_create(&libusbThread, NULL, &usbshm_libusbPoll, NULL);
 	}
 	if(ret == 0) objectCounter++;

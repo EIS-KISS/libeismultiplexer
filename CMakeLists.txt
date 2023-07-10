@@ -11,6 +11,17 @@ if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 endif(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 
 set(SRC_FILES eismultiplexer.c usbshm.c)
+
+message("Platform " ${CMAKE_SYSTEM_NAME})
+if(WIN32)
+	message("Building for Windows")
+	file(GLOB_RECURSE ARGP_SRC ${PROJECT_SOURCE_DIR}/argp/*.*)
+	set(SRC_FILES ${SRC_FILES} ${ARGP_SRC})
+	include_directories(./argp)
+else()
+	message("Building for UNIX")
+endif(WIN32)
+
 add_library(${PROJECT_NAME} SHARED ${SRC_FILES})
 target_link_libraries(${PROJECT_NAME} ${LIBUSB_LIBRARIES})
 target_include_directories(${PROJECT_NAME} PUBLIC ${LIBUSB_INCLUDE_DIRS})
