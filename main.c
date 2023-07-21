@@ -70,11 +70,27 @@ static channel_t char_to_channel(char ch)
 	}
 }
 
+void print_commands(void)
+{
+	puts("Valid commands:");
+	puts("connect [CHANNEL]\t | connect a channels");
+	puts("disconnect [CHANNEL]\t | disconnect a channels");
+	puts("clear\t\t\t | disconnect all channels");
+	puts("connect_all\t\t | connect all channels");
+	puts("get\t\t\t | get the state of all channels");
+	puts("read [ADDRESS] [LENGTH]\t | read from the device eeprom at address");
+	puts("write [ADDRESS] [LENGTH] | write to the device eeprom at address");
+}
+
 static int process_commands(char** commands, size_t command_count, struct eismultiplexer* multiplexer, char* name)
 {
 	if(strcmp(commands[0], "clear") == 0)
 	{
 		eismultiplexer_disconnect_channel(multiplexer, CHANNEL_NONE);
+	}
+	else if(strcmp(commands[0], "help") == 0)
+	{
+		print_commands();
 	}
 	else if(strcmp(commands[0], "write") == 0)
 	{
@@ -147,7 +163,7 @@ static int process_commands(char** commands, size_t command_count, struct eismul
 	{
 		if(command_count != 2)
 		{
-			printf("Usage %s %s [CHANNEL]\n", name, commands[0]);
+			puts("A channel is required");
 			return 2;
 		}
 
@@ -173,6 +189,12 @@ static int process_commands(char** commands, size_t command_count, struct eismul
 				printf("could not disconnect channel %c\n", commands[1][0]);
 				return 3;
 			}
+		}
+		else
+		{
+			printf("%s is not a valid command\n", commands[0]);
+			print_commands();
+			return 3;
 		}
 	}
 	return 0;
@@ -214,6 +236,12 @@ int main(int argc, char* argv[])
 {
 	struct config config = {};
 	argp_parse(&argp, argc, argv, 0, 0, &config);
+
+	if(config.list_commands)
+	{
+		print_commands();
+		return 0;
+	}
 
 	if(config.command_count < 1 && !(config.interactive || config.pipe))
 	{
