@@ -287,9 +287,7 @@ int main(int argc, char* argv[])
 				++i;
 			}
 
-			eismultiplexer_set_led(&multiplexer, true);
 			int cmdRet = process_commands(commands, i, &multiplexer, "");
-			eismultiplexer_set_led(&multiplexer, false);
 			if(cmdRet == 0)
 				puts("OK");
 			else
