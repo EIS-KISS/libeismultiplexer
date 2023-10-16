@@ -6,10 +6,6 @@ find_package(PkgConfig REQUIRED)
 find_package(Doxygen)
 pkg_check_modules(LIBUSB REQUIRED libusb-1.0)
 
-if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-	set(CMAKE_INSTALL_PREFIX "/usr" CACHE PATH "..." FORCE)
-endif(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-
 set(SRC_FILES eismultiplexer.c usbshm.c)
 
 message("Platform " ${CMAKE_SYSTEM_NAME})
@@ -20,6 +16,9 @@ if(WIN32)
 	include_directories(./argp)
 else()
 	message("Building for UNIX")
+	if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+		set(CMAKE_INSTALL_PREFIX "/usr" CACHE PATH "..." FORCE)
+	endif(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 endif(WIN32)
 
 add_library(${PROJECT_NAME} SHARED ${SRC_FILES})
