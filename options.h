@@ -43,7 +43,7 @@ static struct argp_option options[] =
   {"interactive",	'i', 0,				0,	"run in interactive mode" },
   {"pipe",			'p', 0,				0,	"run in pipe mode" },
   {"serial",		's', "[NUMMBER]",	0,	"serial number of device to connect to"},
-  {"serial",		'l', 0,	0,	"list commands"},
+  {"list",			'l', 0,				0,	"list commands"},
   {0}
 };
 
