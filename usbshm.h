@@ -45,6 +45,7 @@ struct usbshm {
 	struct usbshm_priv* priv;
 	int vendorID;
 	int productID;
+	unsigned char* serial;
 	void* user_data;
 	void (*dataCallback)(uint8_t request, unsigned char* data, size_t length, void* user_data);
 };
