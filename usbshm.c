@@ -106,7 +106,7 @@ int usbshm_init(struct usbshm* instance, void (*dataCallback)(uint8_t request, u
 	}
 	if(ret == 0)
 		objectCounter++;
-	return ret;
+	return ret < 0 ? USBSHM_ERROR_ERR : 0;
 }
 
 bool usbshm_ready(struct usbshm* instance)
@@ -289,5 +289,5 @@ int usbshm_readControlTransferSync(struct usbshm* instance, const uint8_t reques
 	int ret = libusb_control_transfer(instance->priv->handle, LIBUSB_REQUEST_TYPE_VENDOR | LIBUSB_RECIPIENT_DEVICE | LIBUSB_ENDPOINT_IN,
 									 request, wValue, wIndex, buffer, length, 2000);
 	pthread_mutex_unlock(libusbDataMutex);
-	return ret;
+	return ret < 0 ? USBSHM_ERROR_ERR : 0;
 }
