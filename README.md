@@ -1,10 +1,10 @@
 # libeismultiplexer
 
-libeismultiplexer is a shared library that allows you to control EISmulitplexer devices.
+libeismultiplexer is a shared library that allows you to control EISmultiplexer devices.
 
 For questions or comments, please write to klemm@rhd-instruments.de
 
-Full Online API documentation can be built with the "doc" target and is also avialable [here](http://uvos.xyz/kiss/libeismultiplexer).
+Full Online API documentation can be built with the "doc" target and is also available [here](http://uvos.xyz/kiss/libeismultiplexer).
 A PDF with API documentation can be found [here](http://uvos.xyz/kiss/libeismultiplexer.pdf).
 
 ## Compile/Install
@@ -33,6 +33,6 @@ to make the documentation:
 
 * make doc
 
-### Licence
+### License
 
-librelaxisloader is licenced to you under the Apache License, Version 2.0
+librelaxisloader is licensed to you under the BSD-3-CLAUSE license
