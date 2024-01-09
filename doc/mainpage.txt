@@ -1,6 +1,6 @@
 /*! \mainpage libeismultiplexer manual
 
-libeismultiplexer is a shared library that allows you to control EISmultiplexer devices
+libeismultiplexer is a shared library that allows you to control EISmultiplexer devices. For build instructions please see the \ref README.
 
 An API reference can be found here: \subpage API
 

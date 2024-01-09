@@ -35,14 +35,14 @@
 
 const char *argp_program_version = "eismulitplexer_cli";
 const char *argp_program_bug_address = "<carl@uvos.xyz>";
-static char doc[] = "Applicaion to control eismultiplexer devices";
+static char doc[] = "Application to control eismultiplexer devices";
 static char args_doc[] = "COMMAND";
 
 static struct argp_option options[] =
 {
   {"interactive",	'i', 0,				0,	"run in interactive mode" },
   {"pipe",			'p', 0,				0,	"run in pipe mode" },
-  {"serial",		's', "[NUMMBER]",	0,	"serial number of device to connect to"},
+  {"serial",		's', "[NUMBER]",	0,	"serial number of device to connect to"},
   {"list",			'l', 0,				0,	"list commands"},
   {0}
 };

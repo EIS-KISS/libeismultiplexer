@@ -1,3 +1,5 @@
+[comment]: \page README Readme
+
 # libeismultiplexer
 
 libeismultiplexer is a shared library that allows you to control EISmultiplexer devices.
