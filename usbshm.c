@@ -124,32 +124,39 @@ int usbshm_open(struct usbshm* instance, int vendorID, int productID, const unsi
 	if( count > 0)
 	{
 		struct libusb_device_descriptor desc = {0};
-		for(int i = 0; i < count; ++i) 
+		for(int i = 0; i < count; ++i)
 		{
 			libusb_get_device_descriptor(list[i], &desc);
 			if(desc.idVendor == vendorID && desc.idProduct == productID)
 			{
 				errorCode = libusb_open(list[i], &instance->priv->handle) < 0 ? USBSHM_ERROR_ERR : 0;
-				if(serial)
+				if(errorCode != USBSHM_ERROR_ERR && instance->priv->handle)
 				{
-					size_t len = strlen((const char*)serial)+1;
-					unsigned char* buffer = malloc(len);
-					buffer[0] = '\0';
-					libusb_get_string_descriptor_ascii(instance->priv->handle, desc.iSerialNumber, buffer, len);
-					int cmp = strcmp((const char*)serial, (const char*)buffer);
-					free(buffer);
-					if(cmp != 0)
+					if(serial)
 					{
-						libusb_close(instance->priv->handle);
-						instance->priv->handle = NULL;
-						continue;
+						size_t len = strlen((const char*)serial)+1;
+						unsigned char* buffer = malloc(len);
+						buffer[0] = '\0';
+						libusb_get_string_descriptor_ascii(instance->priv->handle, desc.iSerialNumber, buffer, len);
+						int cmp = strcmp((const char*)serial, (const char*)buffer);
+						free(buffer);
+						if(cmp != 0)
+						{
+							libusb_close(instance->priv->handle);
+							instance->priv->handle = NULL;
+							continue;
+						}
 					}
+					break;
 				}
-				break;
+				else
+				{
+					instance->priv->handle = NULL;
+				}
 			}
 		}
 	}
-	else 
+	else
 	{
 		printf("Can not list devices\n");
 		pthread_mutex_unlock(libusbDataMutex);
