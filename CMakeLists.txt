@@ -6,6 +6,9 @@ find_package(PkgConfig REQUIRED)
 find_package(Doxygen)
 pkg_check_modules(LIBUSB REQUIRED libusb-1.0)
 
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_C_STANDARD 11)
+
 set(SRC_FILES eismultiplexer.c usbshm.c)
 
 message("Platform " ${CMAKE_SYSTEM_NAME})

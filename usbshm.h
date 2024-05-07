@@ -27,48 +27,42 @@
 
 #include <libusb-1.0/libusb.h>
 #include <pthread.h>
-#include <stdatomic.h>
 #include <stdint.h>
-#include <time.h>
 #include <stdbool.h>
 
 struct usbshm_priv;
 
 enum {
-	USBSHM_ERROR_AGAIN = -1,
 	USBSHM_ERROR_PARAM = -2,
 	USBSHM_ERROR_ERR = -3,
 	USBSHM_ERROR_NOT_CONNECTED = -4,
+	USBSHM_ERROR_ALLREADY_CONNECTED = -5,
+	USBSHM_ERROR_TIMEOUT = -6
 };
 
 struct usbshm {
-	struct usbshm_priv* priv;
 	int vendorID;
 	int productID;
 	unsigned char* serial;
-	void* user_data;
-	void (*dataCallback)(uint8_t request, unsigned char* data, size_t length, void* user_data);
+	libusb_device_handle* handle;
+	pthread_mutex_t* mutex;
 };
 
 void usbshm_distroy(struct usbshm* instance);
 
-int usbshm_init(struct usbshm* instance, void (*dataCallback)(uint8_t request, unsigned char* data, size_t length, void* user_data), void* user_data);
-
-bool usbshm_ready(struct usbshm* instance);
+int usbshm_init(struct usbshm* instance);
 
 int usbshm_open(struct usbshm* instance, int vendorID, int productID, const unsigned char* serial);
 
-bool usbshm_isOpen(struct usbshm* instance);
+bool usbshm_is_open(struct usbshm* instance);
 
 void usbshm_reset(struct usbshm* instance);
 
 void usbshm_reopen(struct usbshm* instance);
 
-int usbshm_writeControlTransfer(struct usbshm* instance, const uint8_t request, 
-								char* buffer, const uint8_t length, 
+int usbshm_write_control_transfer(struct usbshm* instance, const uint8_t request,
+								uint8_t* buffer, const uint8_t length,
 								const uint16_t wValue, const uint16_t wIndex);
 
-int usbshm_readControlTransfer(struct usbshm* instance, const uint8_t request, const uint16_t wValue, const uint16_t wIndex, const uint16_t length);
-
-int usbshm_readControlTransferSync(struct usbshm* instance, const uint8_t request, const uint16_t wValue, const uint16_t wIndex, uint8_t* buffer, const uint16_t length);
+int usbshm_read_control_transfer(struct usbshm* instance, const uint8_t request, const uint16_t wValue, const uint16_t wIndex, uint8_t* buffer, const uint16_t length);
 

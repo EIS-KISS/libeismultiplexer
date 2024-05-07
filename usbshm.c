@@ -25,101 +25,66 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#ifdef __STDC_ALLOC_LIB__
+#define __STDC_WANT_LIB_EXT2__ 1
+#else
+#define _POSIX_C_SOURCE 200809L
+#endif
+
 #include "usbshm.h"
 
 #include <stdint.h>
 #include <stdio.h>
-#include <stdatomic.h>
 #include <stdbool.h>
 #include <string.h>
 #include <stdlib.h>
 #include <libusb-1.0/libusb.h>
-#include <errno.h>
 #include <unistd.h>
 
-struct usbshm_priv
-{
-	libusb_device_handle* handle;
-	struct libusb_transfer* transfer;
-	unsigned char* buffer;
-};
-
-static unsigned objectCounter = 0;
-static struct timeval timeout = {1, 0};
-static pthread_mutex_t *libusbDataMutex;
-static pthread_t libusbThread;
-static atomic_bool threadStop;
-
-static void usbshm_transferCallBack(struct libusb_transfer *transfer);
+static int object_counter = 0;
+static struct libusb_context* context = NULL;
 
 void usbshm_distroy(struct usbshm* instance)
 {
-	while(!usbshm_ready(instance))
-		sleep(1);
-	free(instance->priv->transfer);
-	libusb_close(instance->priv->handle);
-	free(instance->priv->buffer);
-	free(instance->priv);
+	pthread_mutex_lock(instance->mutex);
+	libusb_close(instance->handle);
 	if(instance->serial)
 		free(instance->serial);
-	if(--objectCounter == 0)
-	{
-		threadStop = true;
-		pthread_join(libusbThread, NULL);
-		libusb_exit(NULL);
-		pthread_mutex_destroy(libusbDataMutex);
-	}
 }
 
-static void* usbshm_libusbPoll(void* arg)
+bool usbshm_is_open(struct usbshm* instance)
 {
-	while(!threadStop)
-	{
-		libusb_handle_events_timeout_completed(NULL, &timeout, NULL);
-	}
-	return NULL;
+	return instance->handle != NULL;
 }
 
-bool usbshm_isOpen(struct usbshm* instance)
+int usbshm_init(struct usbshm* instance)
 {
-	return instance->priv->handle != NULL;
-}
-
-int usbshm_init(struct usbshm* instance, void (*dataCallback)(uint8_t request, unsigned char* data, size_t length, void* user_data), void* user_data)
-{
-	int ret=0;
-	instance->priv = malloc(sizeof(*instance->priv));
-	instance->priv->handle = NULL;
-	instance->priv->transfer = NULL;
-	instance->priv->buffer = NULL;
-	instance->vendorID = 0;
-	instance->productID = 0;
-	instance->serial = NULL;
-	instance->dataCallback = dataCallback;
-	instance->user_data = user_data;
-	if(objectCounter == 0)
-	{
-		ret = libusb_init(NULL) < 0 ? USBSHM_ERROR_ERR : 0;
-		libusbDataMutex = malloc(sizeof(*libusbDataMutex));
-		pthread_mutex_init(libusbDataMutex, NULL);
-		pthread_create(&libusbThread, NULL, &usbshm_libusbPoll, NULL);
-	}
+	int ret = 0;
+	if(object_counter == 0)
+		ret = libusb_init(&context) < 0 ? USBSHM_ERROR_ERR : 0;
 	if(ret == 0)
-		objectCounter++;
-	return ret < 0 ? USBSHM_ERROR_ERR : 0;
-}
+	{
+		++object_counter;
+		instance->handle = NULL;
+		instance->vendorID = 0;
+		instance->productID = 0;
+		instance->serial = NULL;
+		instance->mutex =  malloc(sizeof(*(instance->mutex)));
+		pthread_mutex_init(instance->mutex, NULL);
+	}
 
-bool usbshm_ready(struct usbshm* instance)
-{
-	return instance->priv->transfer == NULL;
+	return ret < 0 ? USBSHM_ERROR_ERR : 0;
 }
 
 int usbshm_open(struct usbshm* instance, int vendorID, int productID, const unsigned char* serial)
 {
-	instance->priv->handle = NULL;
-	pthread_mutex_lock(libusbDataMutex);
+	if(instance->handle)
+		return USBSHM_ERROR_ALLREADY_CONNECTED;
+	if(!context)
+		return USBSHM_ERROR_NOT_CONNECTED;
+	pthread_mutex_lock(instance->mutex);
 	libusb_device** list;
-	int count = libusb_get_device_list(NULL, &list);
+	int count = libusb_get_device_list(context, &list);
 	int errorCode = 0;
 	if( count > 0)
 	{
@@ -129,21 +94,21 @@ int usbshm_open(struct usbshm* instance, int vendorID, int productID, const unsi
 			libusb_get_device_descriptor(list[i], &desc);
 			if(desc.idVendor == vendorID && desc.idProduct == productID)
 			{
-				errorCode = libusb_open(list[i], &instance->priv->handle) < 0 ? USBSHM_ERROR_ERR : 0;
-				if(errorCode != USBSHM_ERROR_ERR && instance->priv->handle)
+				errorCode = libusb_open(list[i], &instance->handle) < 0 ? USBSHM_ERROR_ERR : 0;
+				if(errorCode != USBSHM_ERROR_ERR && instance->handle)
 				{
 					if(serial)
 					{
 						size_t len = strlen((const char*)serial)+1;
 						unsigned char* buffer = malloc(len);
 						buffer[0] = '\0';
-						libusb_get_string_descriptor_ascii(instance->priv->handle, desc.iSerialNumber, buffer, len);
+						libusb_get_string_descriptor_ascii(instance->handle, desc.iSerialNumber, buffer, len);
 						int cmp = strcmp((const char*)serial, (const char*)buffer);
 						free(buffer);
 						if(cmp != 0)
 						{
-							libusb_close(instance->priv->handle);
-							instance->priv->handle = NULL;
+							libusb_close(instance->handle);
+							instance->handle = NULL;
 							continue;
 						}
 					}
@@ -151,7 +116,7 @@ int usbshm_open(struct usbshm* instance, int vendorID, int productID, const unsi
 				}
 				else
 				{
-					instance->priv->handle = NULL;
+					instance->handle = NULL;
 				}
 			}
 		}
@@ -159,11 +124,13 @@ int usbshm_open(struct usbshm* instance, int vendorID, int productID, const unsi
 	else
 	{
 		printf("Can not list devices\n");
-		pthread_mutex_unlock(libusbDataMutex);
+		pthread_mutex_unlock(instance->mutex);
 		return USBSHM_ERROR_ERR;
 	}
 
-	if(usbshm_isOpen(instance))
+	pthread_mutex_unlock(instance->mutex);
+
+	if(usbshm_is_open(instance))
 	{
 		instance->vendorID = vendorID;
 		instance->productID = productID;
@@ -172,7 +139,7 @@ int usbshm_open(struct usbshm* instance, int vendorID, int productID, const unsi
 			instance->serial = calloc(strlen((char*)serial), 1);
 			memcpy(instance->serial, serial, strlen((char*)serial));
 		}
-		libusb_set_auto_detach_kernel_driver(instance->priv->handle, true);
+		libusb_set_auto_detach_kernel_driver(instance->handle, true);
 	}
 	else
 	{
@@ -181,120 +148,65 @@ int usbshm_open(struct usbshm* instance, int vendorID, int productID, const unsi
 	}
 
 	libusb_free_device_list(list, count);
-	pthread_mutex_unlock(libusbDataMutex);
 	return errorCode;
 }
 
-bool usbshm_usbshm_isOpen(struct usbshm* instance)
+bool usbshm_usbshm_is_open(struct usbshm* instance)
 {
-	pthread_mutex_lock(libusbDataMutex);
-	bool ret = instance->priv->handle != NULL;
-	pthread_mutex_unlock(libusbDataMutex);
+	pthread_mutex_lock(instance->mutex);
+	bool ret = instance->handle != NULL;
+	pthread_mutex_unlock(instance->mutex);
 	return ret;
 }
 
 void usbshm_reset(struct usbshm* instance)
 {
-	pthread_mutex_lock(libusbDataMutex);
-	libusb_reset_device(instance->priv->handle);
-	pthread_mutex_unlock(libusbDataMutex);
+	pthread_mutex_lock(instance->mutex);
+	libusb_reset_device(instance->handle);
+	pthread_mutex_unlock(instance->mutex);
 }
 
 void usbshm_reopen(struct usbshm* instance)
 {
 	usbshm_reset(instance);
-	libusb_close(instance->priv->handle);
-	usbshm_open(instance, instance->vendorID, instance->productID, instance->serial);
+	libusb_close(instance->handle);
+	char* serial = strdup((char*)instance->serial);
+	free(instance->serial);
+	usbshm_open(instance, instance->vendorID, instance->productID, (unsigned char*)serial);
 }
 
-int usbshm_writeControlTransfer(struct usbshm* instance, const uint8_t request,
-								char* buffer, const uint8_t length,
+int usbshm_write_control_transfer(struct usbshm* instance, const uint8_t request,
+								uint8_t* buffer, const uint8_t length,
 								const uint16_t wValue, const uint16_t wIndex)
 {
-	if(!usbshm_isOpen(instance))
+	if(!usbshm_is_open(instance))
 		return USBSHM_ERROR_NOT_CONNECTED;
 	if(length > 8)
 		return USBSHM_ERROR_PARAM;
-	if(instance->priv->transfer == NULL)
-	{
-		pthread_mutex_lock(libusbDataMutex);
-		instance->priv->buffer = malloc(length+8);
-		libusb_fill_control_setup(instance->priv->buffer, 
-								  LIBUSB_REQUEST_TYPE_VENDOR | LIBUSB_RECIPIENT_DEVICE | LIBUSB_ENDPOINT_OUT, 
-								  request, wValue, wIndex, length );
-		for(uint8_t i = 0; i < length; ++i) 
-			instance->priv->buffer[i+8] = buffer[i];
-		instance->priv->transfer = libusb_alloc_transfer(0);
-		libusb_fill_control_transfer(instance->priv->transfer, instance->priv->handle, instance->priv->buffer, 
-									 &usbshm_transferCallBack, instance, 100);
-		int ret = libusb_submit_transfer(instance->priv->transfer);
-		if(ret < 0)
-		{
-			free(buffer);
-			libusb_free_transfer(instance->priv->transfer);
-			instance->priv->transfer = NULL;
-			if(ret == LIBUSB_ERROR_NO_DEVICE) 
-				usbshm_reopen(instance);
-			pthread_mutex_unlock(libusbDataMutex);
-		}
-		return ret < 0 ? USBSHM_ERROR_ERR : 0;
-	}
-	else return USBSHM_ERROR_AGAIN;
+	pthread_mutex_lock(instance->mutex);
+	int ret = libusb_control_transfer(instance->handle, LIBUSB_REQUEST_TYPE_VENDOR | LIBUSB_RECIPIENT_DEVICE | LIBUSB_ENDPOINT_OUT,
+									  request, wValue, wIndex, buffer, length, 2000);
+	pthread_mutex_unlock(instance->mutex);
+
+	if(ret == LIBUSB_ERROR_TIMEOUT)
+		ret = USBSHM_ERROR_TIMEOUT;
+	else if(ret < 0 )
+		ret = USBSHM_ERROR_ERR;
+
+	return ret;
 }
 
-int usbshm_readControlTransfer(struct usbshm* instance, const uint8_t request, const uint16_t wValue, const uint16_t wIndex, const uint16_t length)
+int usbshm_read_control_transfer(struct usbshm* instance, const uint8_t request, const uint16_t wValue, const uint16_t wIndex, uint8_t* buffer, const uint16_t length)
 {
-	if(!usbshm_isOpen(instance))
-		return USBSHM_ERROR_NOT_CONNECTED;
-	if(length > 8) 
-		return USBSHM_ERROR_PARAM;
-	if(instance->priv->transfer == NULL)
-	{
-		pthread_mutex_lock(libusbDataMutex);
-		instance->priv->buffer = malloc(length+8);
-		libusb_fill_control_setup(instance->priv->buffer, LIBUSB_REQUEST_TYPE_VENDOR | LIBUSB_RECIPIENT_DEVICE | LIBUSB_ENDPOINT_IN,
-			request, wValue, wIndex, length);
-		instance->priv->transfer = libusb_alloc_transfer(0);
-		libusb_fill_control_transfer(instance->priv->transfer, instance->priv->handle, instance->priv->buffer,
-			&usbshm_transferCallBack, instance, 100);
-		int ret = libusb_submit_transfer(instance->priv->transfer);
-		if(ret < 0)
-		{
-			free(instance->priv->buffer);
-			libusb_free_transfer(instance->priv->transfer);
-			instance->priv->transfer = NULL;
-			if(ret == LIBUSB_ERROR_NO_DEVICE) 
-				usbshm_reopen(instance);
-			pthread_mutex_unlock(libusbDataMutex);
-		}
-		return ret < 0 ? USBSHM_ERROR_ERR : 0;
-	}
-	else return USBSHM_ERROR_AGAIN;
-}
-
-static void usbshm_transferCallBack(struct libusb_transfer *transfer)
-{
-	struct usbshm* context = (struct usbshm*)transfer->user_data;
-	if(transfer->status != LIBUSB_TRANSFER_COMPLETED)
-	{
-		printf("Usb transfer failed with %d\n", transfer->status);
-	}
-	else if(transfer->type == LIBUSB_TRANSFER_TYPE_CONTROL) 
-	{
-		if(context->dataCallback && transfer->length-8 >= transfer->actual_length) 
-			context->dataCallback(transfer->buffer[1], transfer->buffer+8, transfer->actual_length, context->user_data);
-	}
-	free(context->priv->buffer);
-	libusb_free_transfer(context->priv->transfer);
-	context->priv->transfer = NULL;
-	pthread_mutex_unlock(libusbDataMutex);
-}
-
-int usbshm_readControlTransferSync(struct usbshm* instance, const uint8_t request, const uint16_t wValue, const uint16_t wIndex, uint8_t* buffer, const uint16_t length)
-{
-	pthread_mutex_lock(libusbDataMutex);
-	int ret = libusb_control_transfer(instance->priv->handle, LIBUSB_REQUEST_TYPE_VENDOR | LIBUSB_RECIPIENT_DEVICE | LIBUSB_ENDPOINT_IN,
+	pthread_mutex_lock(instance->mutex);
+	int ret = libusb_control_transfer(instance->handle, LIBUSB_REQUEST_TYPE_VENDOR | LIBUSB_RECIPIENT_DEVICE | LIBUSB_ENDPOINT_IN,
 									 request, wValue, wIndex, buffer, length, 2000);
-	pthread_mutex_unlock(libusbDataMutex);
-	return ret < 0 ? USBSHM_ERROR_ERR : 0;
+	pthread_mutex_unlock(instance->mutex);
+
+	if(ret == LIBUSB_ERROR_TIMEOUT)
+		ret = USBSHM_ERROR_TIMEOUT;
+	else if(ret < 0 )
+		ret = USBSHM_ERROR_ERR;
+
+	return ret;
 }
