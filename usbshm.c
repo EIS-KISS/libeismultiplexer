@@ -93,9 +93,6 @@ bool usbshm_is_open(struct usbshm* instance)
 
 int usbshm_open(struct usbshm* instance, int vendorID, int productID, const unsigned char* serial)
 {
-	if(instance->handle)
-		return USBSHM_ERROR_ALLREADY_CONNECTED;
-
 	int ret = usbshm_init(instance);
 	if(ret < 0)
 		return ret;
@@ -104,7 +101,7 @@ int usbshm_open(struct usbshm* instance, int vendorID, int productID, const unsi
 	libusb_device** list;
 	int count = libusb_get_device_list(context, &list);
 	int errorCode = 0;
-	if( count > 0)
+	if(count > 0)
 	{
 		struct libusb_device_descriptor desc = {0};
 		for(int i = 0; i < count; ++i)
