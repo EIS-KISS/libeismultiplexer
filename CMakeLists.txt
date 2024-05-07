@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 
-project(eismultiplexer)
+project(eismultiplexer C)
 
 find_package(PkgConfig REQUIRED)
 find_package(Doxygen)
