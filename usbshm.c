@@ -44,20 +44,7 @@
 static int object_counter = 0;
 static struct libusb_context* context = NULL;
 
-void usbshm_distroy(struct usbshm* instance)
-{
-	pthread_mutex_lock(instance->mutex);
-	libusb_close(instance->handle);
-	if(instance->serial)
-		free(instance->serial);
-}
-
-bool usbshm_is_open(struct usbshm* instance)
-{
-	return instance->handle != NULL;
-}
-
-int usbshm_init(struct usbshm* instance)
+static int usbshm_init(struct usbshm* instance)
 {
 	int ret = 0;
 	if(object_counter == 0)
@@ -76,12 +63,38 @@ int usbshm_init(struct usbshm* instance)
 	return ret < 0 ? USBSHM_ERROR_ERR : 0;
 }
 
+static void usbshm_exit(void)
+{
+	if(--object_counter == 0)
+	{
+		libusb_exit(context);
+		context = NULL;
+	}
+}
+
+void usbshm_close(struct usbshm* instance)
+{
+	pthread_mutex_lock(instance->mutex);
+	libusb_close(instance->handle);
+	if(instance->serial)
+		free(instance->serial);
+	usbshm_exit();
+}
+
+bool usbshm_is_open(struct usbshm* instance)
+{
+	return instance->handle != NULL;
+}
+
 int usbshm_open(struct usbshm* instance, int vendorID, int productID, const unsigned char* serial)
 {
 	if(instance->handle)
 		return USBSHM_ERROR_ALLREADY_CONNECTED;
-	if(!context)
-		return USBSHM_ERROR_NOT_CONNECTED;
+
+	int ret = usbshm_init(instance);
+	if(ret < 0)
+		return ret;
+
 	pthread_mutex_lock(instance->mutex);
 	libusb_device** list;
 	int count = libusb_get_device_list(context, &list);

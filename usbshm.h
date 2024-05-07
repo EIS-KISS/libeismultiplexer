@@ -48,11 +48,9 @@ struct usbshm {
 	pthread_mutex_t* mutex;
 };
 
-void usbshm_distroy(struct usbshm* instance);
-
-int usbshm_init(struct usbshm* instance);
-
 int usbshm_open(struct usbshm* instance, int vendorID, int productID, const unsigned char* serial);
+
+void usbshm_close(struct usbshm* instance);
 
 bool usbshm_is_open(struct usbshm* instance);
 

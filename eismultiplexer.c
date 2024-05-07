@@ -40,10 +40,6 @@ int eismultiplexer_connect(struct eismultiplexer* muliplexer, uint16_t serial)
 	muliplexer->priv = malloc(sizeof(*muliplexer->priv));
 	if(!muliplexer->priv)
 		return -1;
-	
-	ret = usbshm_init(muliplexer->priv);
-	if(ret)
-		return -2;
 
 	unsigned char serialStr[5];
 	snprintf((char*)serialStr, sizeof(serialStr), "%04hu", serial);
@@ -112,7 +108,7 @@ uint16_t eismultiplexer_read_eeprom(struct eismultiplexer* muliplexer, uint16_t 
 
 void eismultiplexer_disconnect(struct eismultiplexer* muliplexer)
 {
-	usbshm_distroy(muliplexer->priv);
+	usbshm_close(muliplexer->priv);
 	free(muliplexer->priv);
 	muliplexer->priv = NULL;
 }
