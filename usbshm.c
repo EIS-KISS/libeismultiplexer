@@ -44,12 +44,13 @@
 static int object_counter = 0;
 static struct libusb_context* context = NULL;
 
+__attribute__ ((visibility ("hidden")))
 static int usbshm_init(struct usbshm* instance)
 {
 	int ret = 0;
 	if(object_counter == 0)
 		ret = libusb_init(&context) < 0 ? USBSHM_ERROR_ERR : 0;
-	if(ret == 0)
+	if(ret >= 0)
 	{
 		++object_counter;
 		instance->handle = NULL;
@@ -63,6 +64,7 @@ static int usbshm_init(struct usbshm* instance)
 	return ret < 0 ? USBSHM_ERROR_ERR : 0;
 }
 
+__attribute__ ((visibility ("hidden")))
 static void usbshm_exit(void)
 {
 	if(--object_counter == 0)
@@ -72,6 +74,7 @@ static void usbshm_exit(void)
 	}
 }
 
+__attribute__ ((visibility ("hidden")))
 void usbshm_close(struct usbshm* instance)
 {
 	if(!instance->handle)
@@ -86,11 +89,13 @@ void usbshm_close(struct usbshm* instance)
 	pthread_mutex_destroy(instance->mutex);
 }
 
+__attribute__ ((visibility ("hidden")))
 bool usbshm_is_open(struct usbshm* instance)
 {
 	return instance->handle != NULL;
 }
 
+__attribute__ ((visibility ("hidden")))
 int usbshm_open(struct usbshm* instance, int vendorID, int productID, const unsigned char* serial)
 {
 	int ret = usbshm_init(instance);
@@ -166,14 +171,16 @@ int usbshm_open(struct usbshm* instance, int vendorID, int productID, const unsi
 	return errorCode;
 }
 
+__attribute__ ((visibility ("hidden")))
 bool usbshm_usbshm_is_open(struct usbshm* instance)
-{;
+{
 	pthread_mutex_lock(instance->mutex);
 	bool ret = instance->handle != NULL;
 	pthread_mutex_unlock(instance->mutex);
 	return ret;
 }
 
+__attribute__ ((visibility ("hidden")))
 void usbshm_reset(struct usbshm* instance)
 {
 	if(!instance->handle)
@@ -183,6 +190,7 @@ void usbshm_reset(struct usbshm* instance)
 	pthread_mutex_unlock(instance->mutex);
 }
 
+__attribute__ ((visibility ("hidden")))
 void usbshm_reopen(struct usbshm* instance)
 {
 	usbshm_reset(instance);
@@ -192,6 +200,7 @@ void usbshm_reopen(struct usbshm* instance)
 	usbshm_open(instance, instance->vendorID, instance->productID, (unsigned char*)serial);
 }
 
+__attribute__ ((visibility ("hidden")))
 int usbshm_write_control_transfer(struct usbshm* instance, const uint8_t request,
 								uint8_t* buffer, const uint8_t length,
 								const uint16_t wValue, const uint16_t wIndex)
@@ -215,6 +224,7 @@ int usbshm_write_control_transfer(struct usbshm* instance, const uint8_t request
 	return ret;
 }
 
+__attribute__ ((visibility ("hidden")))
 int usbshm_read_control_transfer(struct usbshm* instance, const uint8_t request, const uint16_t wValue, const uint16_t wIndex, uint8_t* buffer, const uint16_t length)
 {
 	if(!instance->handle)
