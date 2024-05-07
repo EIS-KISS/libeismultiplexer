@@ -74,11 +74,16 @@ static void usbshm_exit(void)
 
 void usbshm_close(struct usbshm* instance)
 {
+	if(!instance->handle)
+		return;
 	pthread_mutex_lock(instance->mutex);
 	libusb_close(instance->handle);
 	if(instance->serial)
 		free(instance->serial);
+	instance->handle = NULL;
 	usbshm_exit();
+	pthread_mutex_unlock(instance->mutex);
+	pthread_mutex_destroy(instance->mutex);
 }
 
 bool usbshm_is_open(struct usbshm* instance)
@@ -165,7 +170,7 @@ int usbshm_open(struct usbshm* instance, int vendorID, int productID, const unsi
 }
 
 bool usbshm_usbshm_is_open(struct usbshm* instance)
-{
+{;
 	pthread_mutex_lock(instance->mutex);
 	bool ret = instance->handle != NULL;
 	pthread_mutex_unlock(instance->mutex);
@@ -174,6 +179,8 @@ bool usbshm_usbshm_is_open(struct usbshm* instance)
 
 void usbshm_reset(struct usbshm* instance)
 {
+	if(!instance->handle)
+		return;
 	pthread_mutex_lock(instance->mutex);
 	libusb_reset_device(instance->handle);
 	pthread_mutex_unlock(instance->mutex);
@@ -192,6 +199,8 @@ int usbshm_write_control_transfer(struct usbshm* instance, const uint8_t request
 								uint8_t* buffer, const uint8_t length,
 								const uint16_t wValue, const uint16_t wIndex)
 {
+	if(!instance->handle)
+		return USBSHM_ERROR_NOT_CONNECTED;
 	if(!usbshm_is_open(instance))
 		return USBSHM_ERROR_NOT_CONNECTED;
 	if(length > 8)
@@ -211,6 +220,8 @@ int usbshm_write_control_transfer(struct usbshm* instance, const uint8_t request
 
 int usbshm_read_control_transfer(struct usbshm* instance, const uint8_t request, const uint16_t wValue, const uint16_t wIndex, uint8_t* buffer, const uint16_t length)
 {
+	if(!instance->handle)
+		return USBSHM_ERROR_NOT_CONNECTED;
 	pthread_mutex_lock(instance->mutex);
 	int ret = libusb_control_transfer(instance->handle, LIBUSB_REQUEST_TYPE_VENDOR | LIBUSB_RECIPIENT_DEVICE | LIBUSB_ENDPOINT_IN,
 									 request, wValue, wIndex, buffer, length, 2000);
