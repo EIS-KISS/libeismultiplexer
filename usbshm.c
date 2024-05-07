@@ -44,7 +44,6 @@
 static int object_counter = 0;
 static struct libusb_context* context = NULL;
 
-__attribute__ ((visibility ("hidden")))
 static int usbshm_init(struct usbshm* instance)
 {
 	int ret = 0;
@@ -64,7 +63,7 @@ static int usbshm_init(struct usbshm* instance)
 	return ret < 0 ? USBSHM_ERROR_ERR : 0;
 }
 
-__attribute__ ((visibility ("hidden")))
+
 static void usbshm_exit(void)
 {
 	if(--object_counter == 0)
