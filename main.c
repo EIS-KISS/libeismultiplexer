@@ -80,6 +80,8 @@ void print_commands(void)
 	puts("get\t\t\t | get the state of all channels");
 	puts("read [ADDRESS] [LENGTH]\t | read from the device eeprom at address");
 	puts("write [ADDRESS] [LENGTH] | write to the device eeprom at address");
+	puts("list | list the serial nummbers of the connected devices");
+	puts("channels | get the channel of the device");
 }
 
 static int process_commands(char** commands, size_t command_count, struct eismultiplexer* multiplexer, char* name)
@@ -158,6 +160,32 @@ static int process_commands(char** commands, size_t command_count, struct eismul
 			bool connected = channels & (1 << i);
 			printf("Channel %c: %s\n", (char)('A'+i), connected ? "on" : "off");
 		}
+	}
+	else if(strcmp(commands[0], "channels") == 0)
+	{
+		uint16_t channels;
+		if(eismultiplexer_get_channel_count(multiplexer, &channels) < 0)
+		{
+			printf("could not get the number of channels\n");
+			return 3;
+		}
+		printf("The connected device has %u channels\n", channels);
+	}
+	else if(strcmp(commands[0], "list") == 0)
+	{
+		size_t count;
+		uint16_t* serials = eismultiplexer_list_available_devices(&count);
+		if(count == 0)
+		{
+			printf("No devices connected\n");
+			return 3;
+		}
+
+		printf("Connected devices:\n");
+		for(size_t i = 0; i < count; ++i)
+			printf("%04u\n", serials[i]);
+
+		free(serials);
 	}
 	else
 	{

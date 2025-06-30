@@ -34,6 +34,22 @@
 #include <time.h>
 #include <stdio.h>
 
+uint16_t* eismultiplexer_list_available_devices(size_t* count)
+{
+	struct usbshm shm = {};
+	*count = 0;
+	unsigned char** serials;
+	int ret = usbshm_find(&shm, 0xfe17, 0x07dc, &serials, count);
+	usbshm_close(&shm);
+	if(ret < 0 || *count == 0)
+		return NULL;
+	uint16_t* numeric_serials = malloc(sizeof(*numeric_serials)*(*count));
+	for(size_t i = 0; i < *count; ++i) {
+		numeric_serials[i] = atoi((char*)serials[i]);
+	}
+	return numeric_serials;
+}
+
 int eismultiplexer_connect(struct eismultiplexer* muliplexer, uint16_t serial)
 {
 	int ret;
@@ -83,6 +99,14 @@ channel_t eismultiplexer_get_connected(struct eismultiplexer* muliplexer)
 	uint8_t buffer[2] = {};
 	usbshm_read_control_transfer(muliplexer->priv, 3, 0, 0, buffer, 1);
 	return buffer[0];
+}
+
+int eismultiplexer_get_channel_count(struct eismultiplexer* muliplexer, uint16_t *count)
+{
+	uint8_t buffer[2] = {};
+	int ret = usbshm_read_control_transfer(muliplexer->priv, 7, 0, 0, buffer, 1);
+	*count = buffer[0];
+	return ret;
 }
 
 int eismultiplexer_set_led(struct eismultiplexer* muliplexer, bool on)

@@ -95,6 +95,57 @@ bool usbshm_is_open(struct usbshm* instance)
 }
 
 __attribute__ ((visibility ("hidden")))
+int usbshm_find(struct usbshm* instance, int vendorID, int productID, unsigned char*** serials, size_t* count)
+{
+	int ret = usbshm_init(instance);
+	if(ret < 0)
+		return ret;
+
+	pthread_mutex_lock(instance->mutex);
+
+	libusb_device** list;
+	libusb_device_handle* handle;
+	int lusbcount = libusb_get_device_list(context, &list);
+	int errorCode = 0;
+
+	*count = 0;
+	*serials = malloc(sizeof(*serials)*lusbcount);
+
+	if(lusbcount > 0)
+	{
+		struct libusb_device_descriptor desc = {0};
+		for(int i = 0; i < lusbcount; ++i)
+		{
+			libusb_get_device_descriptor(list[i], &desc);
+			if(desc.idVendor == vendorID && desc.idProduct == productID)
+			{
+				errorCode = libusb_open(list[i], &handle) < 0 ? USBSHM_ERROR_ERR : 0;
+				if(errorCode != USBSHM_ERROR_ERR && handle)
+				{
+					(*serials)[*count] = calloc(16, 1);
+					libusb_get_string_descriptor_ascii(handle, desc.iSerialNumber, (*serials)[*count], 16);
+					++(*count);
+				}
+				else
+				{
+					handle = NULL;
+				}
+			}
+		}
+	}
+	else
+	{
+		printf("Can not list devices\n");
+		pthread_mutex_unlock(instance->mutex);
+		return USBSHM_ERROR_ERR;
+	}
+
+	pthread_mutex_unlock(instance->mutex);
+
+	return 0;
+}
+
+__attribute__ ((visibility ("hidden")))
 int usbshm_open(struct usbshm* instance, int vendorID, int productID, const unsigned char* serial)
 {
 	int ret = usbshm_init(instance);

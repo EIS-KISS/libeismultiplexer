@@ -50,12 +50,20 @@ typedef enum {
 	CHANNEL_E = (1 << 4),
 	CHANNEL_F = (1 << 5),
 	CHANNEL_G = (1 << 6),
+	CHANNEL_H = (1 << 7),
 	CHANNEL_NONE = 0,
 } channel_t;
 
 struct eismultiplexer {
 	struct usbshm* priv;
 };
+
+/**
+ * @brief Lists the available eismultiplexer devices
+ * @param count The number of available eismultiplexer devices
+ * @return An newly allocated array of length count with the serial numbers of the available devices to be freed by the user with free()
+ */
+uint16_t* eismultiplexer_list_available_devices(size_t* count);
 
 /**
  * @brief Attempts to connect to a EISmultiplexer device and initializes a eismultiplexer struct
@@ -104,6 +112,14 @@ channel_t eismultiplexer_get_connected(struct eismultiplexer* muliplexer);
  * @return 0 on success and < 0 on failure
  */
 int eismultiplexer_set_led(struct eismultiplexer* muliplexer, bool on);
+
+/**
+ * @brief Gets the number of channels on the device
+ * @param multiplexer pointer to an eismultiplexer struct
+ * @param count a pointer where the nummber of channels will be stored.
+ * @return 0 on success and < 0 on failure
+ */
+int eismultiplexer_get_channel_count(struct eismultiplexer* muliplexer, uint16_t *count);
 
 /**
  * @brief Disconnects from the eismultiplexer

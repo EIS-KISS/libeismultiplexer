@@ -48,6 +48,8 @@ struct usbshm {
 	pthread_mutex_t* mutex;
 };
 
+int usbshm_find(struct usbshm* instance, int vendorID, int productID, unsigned char*** serials, size_t* count);
+
 int usbshm_open(struct usbshm* instance, int vendorID, int productID, const unsigned char* serial);
 
 void usbshm_close(struct usbshm* instance);
