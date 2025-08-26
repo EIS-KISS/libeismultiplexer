@@ -125,6 +125,7 @@ int usbshm_find(struct usbshm* instance, int vendorID, int productID, unsigned c
 					(*serials)[*count] = calloc(16, 1);
 					libusb_get_string_descriptor_ascii(handle, desc.iSerialNumber, (*serials)[*count], 16);
 					++(*count);
+					libusb_close(handle);
 				}
 				else
 				{
@@ -139,6 +140,8 @@ int usbshm_find(struct usbshm* instance, int vendorID, int productID, unsigned c
 		pthread_mutex_unlock(instance->mutex);
 		return USBSHM_ERROR_ERR;
 	}
+
+	 libusb_free_device_list(list, true);
 
 	pthread_mutex_unlock(instance->mutex);
 
