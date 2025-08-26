@@ -276,7 +276,17 @@ int main(int argc, char* argv[])
 		printf("A command is required\n");
 		return 2;
 	}
-	
+
+	if(config.verbose)
+	{
+		size_t count = 0;
+		printf("Connected devices:\n");
+		uint16_t* serials = eismultiplexer_list_available_devices(&count);
+		for(size_t i = 0; i < count; ++i)
+			printf("%zu: Serial %i\n", i, serials[i]);
+		free(serials);
+	}
+
 	struct eismultiplexer multiplexer;
 	int ret = eismultiplexer_connect(&multiplexer, config.serialSet ? config.serial : 0);
 	if(ret)
