@@ -44,6 +44,7 @@ static struct argp_option options[] =
   {"pipe",			'p', 0,				0,	"run in pipe mode" },
   {"serial",		's', "[NUMBER]",	0,	"serial number of device to connect to"},
   {"list",			'l', 0,				0,	"list commands"},
+  {"verbose",		'v', 0,				0,	"enable verbose debug prints"},
   {0}
 };
 
@@ -61,6 +62,7 @@ struct config
 	char* commands[MAX_COMMANDS];
 	size_t command_count;
 	bool list_commands;
+	bool verbose;
 };
 
 static error_t parse_opt (int key, char *arg, struct argp_state *state)
@@ -88,6 +90,9 @@ static error_t parse_opt (int key, char *arg, struct argp_state *state)
 		break;
 	case 'l':
 		config->list_commands = true;
+		break;
+	case 'v':
+		config->verbose = true;
 		break;
 	case ARGP_KEY_ARG:
 	{

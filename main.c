@@ -278,16 +278,22 @@ int main(int argc, char* argv[])
 	}
 	
 	struct eismultiplexer multiplexer;
-	if(eismultiplexer_connect(&multiplexer, config.serialSet ? config.serial : 0))
+	int ret = eismultiplexer_connect(&multiplexer, config.serialSet ? config.serial : 0);
+	if(ret)
 	{
 		char serialStr[5];
 		snprintf(serialStr, sizeof(serialStr), "%04hu", config.serial);
 		printf("Can not connect to EISmultiplexer device%s%s\n",
 			   config.serialSet ? " with serial " : "", config.serialSet ? serialStr : "");
+		if(config.verbose)
+			printf("eismultiplexer_connect ret %i\n", ret);
 		return 1;
 	}
 
-	int ret = 0;
+	if(config.verbose)
+		printf("eismultiplexer_connect ret %i\n", ret);
+
+	ret = 0;
 
 	if(config.interactive || config.pipe)
 	{
