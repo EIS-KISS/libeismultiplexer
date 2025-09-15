@@ -18,6 +18,8 @@ add_compile_definitions(VERSION_MAJOR=${CMAKE_PROJECT_VERSION_MAJOR})
 add_compile_definitions(VERSION_MINOR=${CMAKE_PROJECT_VERSION_MINOR})
 add_compile_definitions(VERSION_PATCH=${CMAKE_PROJECT_VERSION_PATCH})
 
+option(UDEV_RULES "install udev files" ON)
+
 set(SRC_FILES eismultiplexer.c usbshm.c)
 
 if(CMAKE_HOST_SYSTEM_NAME MATCHES "Windows")
@@ -81,7 +83,7 @@ else (DOXYGEN_FOUND)
   message("Doxygen needs to be installed to generate the doxygen documentation")
 endif (DOXYGEN_FOUND)
 
-if(CMAKE_SYSTEM_NAME MATCHES "^Linux")
+if(CMAKE_SYSTEM_NAME MATCHES "^Linux" AND UDEV_RULES)
 	set(UDEV_RULES_INSTALL_DIR /lib/udev/rules.d CACHE PATH "install directory for linux udev config")
 	install(FILES 90-eismultiplexer.rules DESTINATION ${UDEV_RULES_INSTALL_DIR})
 endif()
